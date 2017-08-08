@@ -5,19 +5,31 @@ import Book from './Book'
 
 class BooksSearch extends React.Component {
   state = {
-    books: [],
+    search: [],
     query: ''
   }
 
-  searchBooks() {
+  searchBooks = () => {
     let query = this.state.query
+
     if (query.length > 0) {
-      BooksAPI.search(query, 20).then(data => {
-        this.setState({ books: data })
-      })
+      BooksAPI
+        .getAll()
+        .then((data) => {
+          let myBooks = data.map(b => b.id)
+          BooksAPI.search(query, 20).then(searchBooks => {
+            searchBooks.forEach(book => {
+              if (myBooks.includes(book.id)) {
+                book.shelf = data.filter(b => b.id === book.id)[0].shelf
+              }
+            })
+
+            this.setState({ search: searchBooks })
+          })
+        })
     } else
       this.setState({
-        books: []
+        search: []
       })
   }
 
@@ -48,13 +60,9 @@ class BooksSearch extends React.Component {
       </div>
       <div className="search-books-results">
         <ol className="books-grid">
-          {this.state.books.length > 0 &&
-            this.state.books.map((book) => <li key={book.id}>
-              <Book bookId={book.id}
-                title={book.title}
-                authors={book.authors && book.authors.join(', ')}
-                imageUrl={book.imageLinks.thumbnail}
-                currentShelf={book.shelf}
+          {this.state.search.length > 0 &&
+            this.state.search.map((book) => <li key={book.id}>
+              <Book book={book}
                 onMoveToShelf={this.moveToShelf} />
             </li>
             )}

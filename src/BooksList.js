@@ -5,10 +5,7 @@ import { Link } from 'react-router-dom'
 
 export default class BooksList extends React.Component {
   state = {
-    books: [],
-    currentlyReadingBooks: [],
-    wantToReadBooks: [],
-    readBooks: []
+    books: []
   }
 
   getAllBooks() {
@@ -16,10 +13,7 @@ export default class BooksList extends React.Component {
       .getAll()
       .then((data) => {
         this.setState({
-          books: data,
-          currentlyReadingBooks: data.filter(book => book.shelf === 'currentlyReading'),
-          wantToReadBooks: data.filter(book => book.shelf === 'wantToRead'),
-          readBooks: data.filter(book => book.shelf === 'read')
+          books: data
         })
       }
       )
@@ -31,22 +25,31 @@ export default class BooksList extends React.Component {
 
   moveToShelf = (bookId, shelf) => {
     BooksAPI.get(bookId)
-      .then((book) => BooksAPI
-        .update(book, shelf).then((books) => {
-          this.getAllBooks()
-        })
-      )
+      .then((book) => {
+        if (book.shelf !== shelf) {
+          BooksAPI.update(book, shelf).then(() => {
+            book.shelf = shelf
+
+            this.setState(state => ({
+              books: state.books.filter(b => b.id !== book.id).concat([book])
+            }))
+          })
+
+
+        }
+      })
   }
 
   render() {
-    let currentlyReadingBooks = this.state.currentlyReadingBooks
-    let wantToReadBooks = this.state.wantToReadBooks
-    let readBooks = this.state.readBooks
+    const books = this.state.books
+    const wantToReadBooks = books.filter(book => book.shelf === 'wantToRead')
+    const currentlyReadingBooks = books.filter(book => book.shelf === 'currentlyReading')
+    const readBooks = books.filter(book => book.shelf === 'read')
 
     return <div className="list-books">
-      <div className="list-books-title">
+      <div className="list-books-title" >
         <h1>MyReads</h1>
-      </div>
+      </div >
       <div className="list-books-content">
         <div>
           <div className="bookshelf">
@@ -54,11 +57,7 @@ export default class BooksList extends React.Component {
             <div className="bookshelf-books">
               <ol className="books-grid">
                 {currentlyReadingBooks.map(book => <li key={book.id}>
-                  <Book bookId={book.id}
-                    title={book.title}
-                    authors={book.authors.join(', ')}
-                    imageUrl={book.imageLinks.thumbnail}
-                    currentShelf={book.shelf}
+                  <Book book={book}
                     onMoveToShelf={this.moveToShelf} />
                 </li>)}
               </ol>
@@ -69,11 +68,7 @@ export default class BooksList extends React.Component {
             <div className="bookshelf-books">
               <ol className="books-grid">
                 {wantToReadBooks.map(book => <li key={book.id}>
-                  <Book bookId={book.id}
-                    title={book.title}
-                    authors={book.authors.join(', ')}
-                    imageUrl={book.imageLinks.thumbnail}
-                    currentShelf={book.shelf}
+                  <Book book={book}
                     onMoveToShelf={this.moveToShelf} />
                 </li>)}
               </ol>
@@ -85,11 +80,7 @@ export default class BooksList extends React.Component {
               <ol className="books-grid">
                 {
                   readBooks.map(book => <li key={book.id}>
-                    <Book bookId={book.id}
-                      title={book.title}
-                      authors={book.authors.join(', ')}
-                      imageUrl={book.imageLinks.thumbnail}
-                      currentShelf={book.shelf}
+                    <Book book={book}
                       onMoveToShelf={this.moveToShelf} />
                   </li>)}
               </ol>
